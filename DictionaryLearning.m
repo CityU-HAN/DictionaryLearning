@@ -1,123 +1,137 @@
-function [Dict, W, w0] = DictionaryLearning(Y, lambda, nrAtoms, nrIterations )
-%% check input sizes
-% check gY
-gYDim = size( Y );
-assert( length( gYDim ) == 3 || length( gYDim ) == 2 );
-assert( gYDim(1) > 1 );
-% check lambda
-if isempty( lambda )
-    crossVali = true;
-else
-    crossVali = false;
-    if( length( gYDim ) == 2 )
-        assert( size( lambda, 1 ) == 1 );
-    end
-    if( length( gYDim ) == 3 )
-        assert( size( lambda, 1 ) == gYDim(2) && size( lambda, 2 ) == gYDim(3) );
-    end
+function [Dict, W, w0] = DictionaryLearning(Y, lambda, nrAtoms, nrIterations, crossValidation, verbose, display)
+
+if nargin < 1
+  error('Y is a required input')
 end
 
-%% initialization
-% initialize sizes
-sLen = gYDim(1);
-if( length( gYDim ) == 3 )
-    iHei = gYDim(2);
-    iWid = gYDim(3);
-end
-if( length( gYDim ) == 2 )
-    iHei = 1;
-    iWid = 1;
-end
-mLen = nrAtoms;
-if isempty( lambda ) 
-    lVal =  zeros( gYDim( 2 ), gYDim( 3 ) );
-else
-    lVal = lambda;
-end
-% fit variables initialize
-Dict = abs( randn( sLen, mLen ) );
-W = zeros( mLen, iHei, iWid );
-w0 = zeros( iHei, iWid );
+% check gY has 2 dimensions
+features = size(Y, 1);
+samples = size(Y, 2);
+assert(features > 1 && samples > 1)
 
-% iterated optimization
+%check lambda
+if isempty(lambda)
+    lambda = 0.1;
+end
+assert(lambda >= 0 && lambda <= 1)
+
+if isempty(nrAtoms)
+    nrAtoms = features;
+end
+
+if isempty(nrIterations)
+    nrIterations = 1000;
+end
+
+%TODO: Implement corssValidation
+if isempty(crossValidation)
+    crossValidation = false;
+end
+
+if isempty(verbose)
+    verbose = false;
+end
+
+if isempty(display)
+    display = false;
+end
+%Initaliaze dictionary and weights
+Dict = abs(randn(features, nrAtoms));
+W = zeros(nrAtoms, samples);
+w0 = zeros(1, samples);
+
+%Loop-control variables
 TOL = 1e-8;
-ITLIMIT = nrIterations;
-preTarget = -inf;
-curTarget = computeObjf( Y, Dict, W, w0, lVal );
-itNum = 1;
+MAXIT = nrIterations;
+iter = 1;
 
-% generating geometric sequence
-geoSeq = [0 0.0001 * ( 2.^[0:14] )];
-cvAry = zeros( length( geoSeq ), 1 );
+%Setting the error, often also called cost
+errors = zeros(MAXIT, 1);
+prevError = -inf;
+curError = calculateError(Y, Dict, W, w0, lambda);
 
-while ( abs( curTarget - preTarget ) > TOL ) && ( itNum <= ITLIMIT )
-    %%update weights
-    fprintf( '%d iterations\n', itNum );
-    for i = 1:iHei
-        for j = 1:iWid
-            %% using matlab library
-            %                 [B, FitInfo]= lassoglm( fitD, gY(:,i,j), 'normal', 'Lambda', lVal, 'RelTol', 1e-8 );
-            %                 fitW(:,i,j) = B(:,1);
-            %                 fitW0(i,j) = FitInfo.Intercept;
-            %% cross validation with coordAsscentENet func
-            if  crossVali
-                k = 1;
-                for m = geoSeq
-                    cvAry(k) = generateCvObj( Y(:,i,j), Dict, m, {w0(i,j), W(:,i,j)}, 5 );
-                    k = k + 1;
-                end
-                tmp = (cvAry == max( cvAry ) );
-                if( length( tmp ) > 1 )
-                    lVal(i, j) = geoSeq(1);
-                else
-                    lVal(i, j) = geoSeq(tmp);
-                end
-            end
-            [beta0,beta] = coordAscentENet( Y(:,i,j), Dict, lVal(i,j), 0, {w0(i,j), W(:,i,j)} );
-            W(:,i,j) = beta;
-            w0(i,j) = beta0;
-        end
+format long
+%format short
+
+if(display)
+    figure(1);
+end
+
+while (abs(curError - prevError) > TOL) && (iter <= MAXIT)
+    if (verbose) 
+        fprintf('Iteration: %i\n', iter);
+        fprintf('Updating weights...');
     end
-    preTarget = curTarget;
-    curTarget = computeObjf( Y, Dict, W, w0, lVal );
-    predictY = computePreY( Dict, W, w0 ); %%compute for dictionary update
-    %fprintf( 'after lasso, curTarget: %e, preTarget: %e\n', curTarget, preTarget );
-    if( abs( curTarget - preTarget ) > TOL )
-        assert( curTarget - preTarget >= 0 );
+    %update each weight-vector
+    for i = 1:samples
+        [beta0, beta] = coordAscentENet(Y(:,i), Dict, lambda, 0, {w0(i), W(:, i)}, nrIterations);
+        W(:, i) = beta;
+        w0(i) = beta0;
     end
+    format long
+    prevError = curError;
+    curError = calculateError(Y, Dict, W, w0, lambda);
+    errorDif = curError - prevError; 
+    
+    if(verbose)
+        fprintf('After lasso, curCost - prevCost = %.10f - %.10f = %.10f\n', curError, prevError, errorDif);
+        fprintf('Updating Dictionary...');
+    end
+    
+    if( abs(errorDif) > TOL )
+        assert(errorDif >= 0);
+    end
+    
+    predictedY = predictY(Dict, W, w0); %compute for dictionary update
     %%update Dictionary
-    for k = 1:sLen
-        for r = 1:mLen
-            a = W(r,:,:) .* ( Y(k,:,:) - predictY(k,:,:) + Dict(k,r) * W(r,:,:) );
-            b = W(r,:,:).^2;
-            a = squeeze( a );
-            b = squeeze( b );
-            a = sum( sum( a ) );
-            b = sum( sum( b ) );
-            if b == 0
+    %sLen: features
+    %mLen: atoms
+    for f = 1:features
+        for a = 1:nrAtoms
+            A = W(a, :) .* (Y(f, :) - predictedY(f, :) + Dict(f, a) * W(a, :));
+            B = W(a, :).^2;
+            A = sum(sum(A));
+            B = sum(sum(B));
+            if B == 0
                 %update predictY first
-                predictY(k,:,:) = predictY(k,:,:) - Dict( k, r ) * W( r, :, : );
-                Dict(k,r) = 0;
+                predictedY(f,:) = predictedY(f,:) - Dict(f, a) * W(a, :);
+                Dict(f,a) = 0;
             else
                 %update predictY first
-                predictY(k,:,:) = predictY(k,:,:) - Dict( k, r ) * W( r, :, : );
-                if( a < 0 || b < 0 )
-                    Dict(k,r) = 0;
+                predictedY(f, :) = predictedY(f, :) - Dict(f, a) * W(a, :);
+                if( A < 0 || B < 0 )
+                    Dict(f, a) = 0;
                 else
-                    Dict(k,r) = a/b;
-                    predictY(k,:,:) = predictY(k,:,:) + Dict( k, r ) * W( r, :, : );
+                    Dict(f, a) = A / B;
+                    predictedY(f,:) = predictedY(f,:) + Dict(f, a) * W(a, :);
                 end
             end
         end
     end
-    preTarget = curTarget;
-    curTarget = computeObjf( Y, Dict, W, w0, lVal );
-    itNum = itNum + 1;
-    %fprintf( 'it num: %d curTarget: %e, preTarget: %e\n', itNum, curTarget, preTarget );
-    if( abs( curTarget - preTarget ) > TOL )
-        assert( curTarget - preTarget >= 0 );
+    prevError = curError;
+    curError = calculateError(Y, Dict, W, w0, lambda);
+    errorDif = curError - prevError;
+    
+    if(verbose)
+        fprintf('Dictionary updated: curCost - prevCost = %.10f - %.10f = %.10f\n', curError, prevError, errorDif);
     end
+    
+    if(display)
+        errors(iter) = curError;
+        if mod(iter, 10) == 0
+            fprintf('Plotting Errors')
+            plot(errors(1:iter));
+            xlabel('iteration');
+            ylabel('error');
+            drawnow
+            %drawnow ('x11', '/dev/null', false, 'gnuplotstream.gp') 
+            save('dbg')
+        end
+    end
+    
+    if(abs(errorDif) > TOL)
+        assert(errorDif >= 0);
+    end
+    iter = iter + 1;
 end
-
-lambda = lVal;
 end

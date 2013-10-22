@@ -2,12 +2,19 @@ function [error]=CrossValidateDictLearn()
     features = 50;
     samples = 80;
     nrAtoms = 50;
-    YTest = genData(features, samples, nrAtoms);
-    YValidate = genData(features, samples, nrAtmos);
+    %generates y R^features*samples
+    Y = genData(features, samples, nrAtoms);
+    yHalf = size(Y, 2)/2;
     
-    [fitD, fitW, fitW0] = DictionaryLearningNew(generatedY, 0.1, 98, [], [], true, true);
+    yTest = Y(:, 1:yHalf);
+    yValidate = Y(:, yHalf + 1:end);
     
-    newW = YValidate \ fitD;
+    [fitD, fitW, fitW0] = DictionaryLearning(yTest, 0.1, 50, 1000, [], true, false);
     
-    error = sum((YValidate - (fitD * fitW + fitW0)) ^ 2)
+    error = zeros(yHalf, 1);
+    for i=1:yHalf
+        wValidate = yValidate(:, i) \ fitD;
+        error(i) = sum((yValidate(:, 1) - fitD * wValidate') .^ 2);
+    end
+    sum(error)
 end
