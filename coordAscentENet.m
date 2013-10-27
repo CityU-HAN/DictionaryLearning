@@ -1,16 +1,17 @@
-function [beta0,beta]=coordAscentENet(y, x, lambda, alpha, init, nrIterations)
+function [w0, w] = coordAscentENet(y, X, lambda, alpha, init, nrIterations)
 % check input sizes
-assert(size(y,1)==size(x,1) && size(y,1)>1);
-n = size(y,1);
-k = size(x,2);
+assert(size(y, 1)==size(X, 1) && size(y, 1) > 1);
+n = size(y, 1);
+k = size(X, 2);
 
 % initialize parameters
 if ~isempty(init)
-    beta0 = init{1};
-    beta = init{2};
+    %support warm start
+    w0 = init{1};
+    w = init{2};
 else
-    beta0 = mean(y);
-    beta = 0.1*ones(k,1);
+    w0 = mean(y);
+    w = 0.1*ones(k,1);
 end
 
 % assume default tolerance and number of iterations
@@ -26,7 +27,7 @@ lls = zeros(MAXIT,1);
 prevll = -realmax;
 
 
-ll = loglik(y,x,lambda,alpha,beta0,beta);
+ll = loglik(y, X, lambda, alpha, w0, w);
 iter = 0;
 
 %close all;
@@ -37,19 +38,19 @@ iter = 0;
 %ax3 = axes('Position',[0.81 0.3 0.09 0.49]);
 %ax4 = axes('Position',[0.1 0.3 0.7 0.49]);
 %ax5 = axes('Position',[0.1 0.05 0.8 0.2]);
-while ll-prevll > TOL && iter < MAXIT
+while ll - prevll > TOL && iter < MAXIT
     iter = iter+1;
     prevll = ll;
     
     % updates
-    beta0 = 1/n*sum(y - x*beta);
+    w0 = 1/n*sum(y - X*w);
     for j=1:k
-        beta(j) = 0;
-        beta(j) = 1/(sum(x(:,j).^2) + lambda*(alpha)) * shrinkThreshold((y - beta0 - x*beta)'*x(:,j),(1-alpha)*lambda);
+        w(j) = 0;
+        w(j) = 1/(sum(X(:,j).^2) + lambda*(alpha)) * shrinkThreshold((y - w0 - X*w)'*X(:,j),(1-alpha)*lambda);
     end
     
     % likelihood for new state
-    ll = loglik(y,x,lambda,alpha,beta0,beta);
+    ll = loglik(y,X,lambda,alpha,w0,w);
     
     assert(ll-prevll>=0)
     
@@ -84,11 +85,13 @@ while ll-prevll > TOL && iter < MAXIT
     %ylabel('penalized log-likelihood');
 end
 
-function ll = loglik(y,x,lambda,alpha,beta0,beta)
+function ll = loglik(y, x, lambda, alpha, w0, w)
 n = size(y,1);
-ll = -1/2*(y - beta0 - x*beta)'*(y - beta0 - x*beta)...
-    -alpha*lambda/2*sum(beta.^2) - (1-alpha)*lambda*sum(abs(beta));
+ll = -1/2*(y - w0 - x*w)'*(y - w0 - x*w)...
+    -alpha*lambda/2*sum(w.^2) - (1-alpha)*lambda*sum(abs(w));
 
-function b = shrinkThreshold(b,lambda)
-b = sign(b).*max(abs(b) - lambda,0);
+function x = shrinkThreshold(x, lambda)
+btemp = abs(x);
+maxval = max(abs(x) - lambda, 0);
+x = sign(x).*max(abs(x) - lambda, 0);
 

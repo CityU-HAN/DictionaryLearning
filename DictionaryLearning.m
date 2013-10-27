@@ -7,7 +7,7 @@ end
 % check gY has 2 dimensions
 features = size(Y, 1);
 samples = size(Y, 2);
-assert(features > 1 && samples > 1)
+assert(features > 1 && samples >= 1)
 
 %check lambda
 if isempty(lambda)
@@ -37,7 +37,8 @@ if isempty(display)
 end
 %Initaliaze dictionary and weights
 Dict = abs(randn(features, nrAtoms));
-W = zeros(nrAtoms, samples);
+%W = zeros(nrAtoms, samples);
+W = abs(randn(nrAtoms, samples));
 w0 = zeros(1, samples);
 
 %Loop-control variables
@@ -60,14 +61,16 @@ end
 while (abs(curError - prevError) > TOL) && (iter <= MAXIT)
     if (verbose) 
         fprintf('Iteration: %i\n', iter);
-        fprintf('Updating weights...');
+        fprintf('Updating weights...\n');
     end
-    %update each weight-vector
+    %% Update each weight-vector
     for i = 1:samples
-        [beta0, beta] = coordAscentENet(Y(:,i), Dict, lambda, 0, {w0(i), W(:, i)}, nrIterations);
-        W(:, i) = beta;
-        w0(i) = beta0;
+        [w0Temp, WTemp] = coordAscentENet(Y(:,i), Dict, lambda, 0, {w0(i), W(:, i)}, 200);
+        W(:, i) = WTemp;
+        w0(i) = w0Temp;
     end
+    
+    %% Calculate and print imrpovements (error-difference)
     format long
     prevError = curError;
     curError = calculateError(Y, Dict, W, w0, lambda);
@@ -82,32 +85,10 @@ while (abs(curError - prevError) > TOL) && (iter <= MAXIT)
         assert(errorDif >= 0);
     end
     
-    predictedY = predictY(Dict, W, w0); %compute for dictionary update
-    %%update Dictionary
-    %sLen: features
-    %mLen: atoms
-    for f = 1:features
-        for a = 1:nrAtoms
-            A = W(a, :) .* (Y(f, :) - predictedY(f, :) + Dict(f, a) * W(a, :));
-            B = W(a, :).^2;
-            A = sum(sum(A));
-            B = sum(sum(B));
-            if B == 0
-                %update predictY first
-                predictedY(f,:) = predictedY(f,:) - Dict(f, a) * W(a, :);
-                Dict(f,a) = 0;
-            else
-                %update predictY first
-                predictedY(f, :) = predictedY(f, :) - Dict(f, a) * W(a, :);
-                if( A < 0 || B < 0 )
-                    Dict(f, a) = 0;
-                else
-                    Dict(f, a) = A / B;
-                    predictedY(f,:) = predictedY(f,:) + Dict(f, a) * W(a, :);
-                end
-            end
-        end
-    end
+    %% Update Dict
+    Dict = updateDict(Y, Dict, W, w0);
+    
+    %% Calculate and print imrpovements (error-difference)
     prevError = curError;
     curError = calculateError(Y, Dict, W, w0, lambda);
     errorDif = curError - prevError;
@@ -116,6 +97,7 @@ while (abs(curError - prevError) > TOL) && (iter <= MAXIT)
         fprintf('Dictionary updated: curCost - prevCost = %.10f - %.10f = %.10f\n', curError, prevError, errorDif);
     end
     
+    %% Plot calculated errors for each iteration
     if(display)
         errors(iter) = curError;
         if mod(iter, 10) == 0

@@ -27,8 +27,9 @@ generatedY = predictY(generatedD, generatedW, generatedW0);
 %abs(randn(features, samples))
 %% fitting without noise
 fprintf('Learned paramaters from noise-free synthetic data\n');
-tic
-[ fitD, fitW, fitW0 ] = DictionaryLearningNew(generatedY, 0.1, 98, [], [], true, true)
-size(fitD)
-size(fitW)
-toc
+size(generatedY)
+%tic
+%[ fitD, fitW, fitW0 ] = DictionaryLearningNew(generatedY, 0.1, 98, [], [], true, true)
+%size(fitD)
+%size(fitW)
+%toc
