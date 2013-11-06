@@ -9,10 +9,9 @@ function [genCost, learnCost] = testDictHungarian(genSizes)
         nrAtoms = genSizes{1};
     end
     [genY, genD] = genData(features, samples, nrAtoms, 0, -1, -1);
-    genD
     genCorrelation = -abs(genD' * genD);
     trCorr = trace(genCorrelation)
-    [genAssign, genCost] = munkres(genCorrelation);
+    %[genAssign, genCost] = munkres(genCorrelation);
     
     disp('learning dictionary');
     [learnD, learnW, learnW0] = ...
@@ -20,7 +19,7 @@ function [genCost, learnCost] = testDictHungarian(genSizes)
     
     learnCorrelation = -abs(genD' * learnD);
     [learnAssign, learnCost] = munkres(learnCorrelation);
-    expectedCost = abs(genCost)
+    expectedCost = abs(trCorr)
     learnedCost = abs(learnCost)
     difference - abs(genCost - learnCost)
     
