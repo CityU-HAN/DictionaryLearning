@@ -56,7 +56,7 @@
         lambdas
         meanErrors
         figure(1);
-        fprintf('Plotting Errors of Grid Search of k-fold Cross validation')
+        fprintf('Plotting Errors of Grid Search of k-fold Cross validation');
         plot(meanErrors);
         xlabel('lambda #');
         ylabel('error');

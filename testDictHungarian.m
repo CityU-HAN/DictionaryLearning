@@ -1,4 +1,4 @@
-function [genCost, learnCost] = testDictHungarian(genSizes)
+function [genCost, learnCost] = testDictHungarian(genSizes, lambda)
     if isempty(genSizes)
         features = 8;
         samples = 20;
@@ -8,14 +8,22 @@ function [genCost, learnCost] = testDictHungarian(genSizes)
         samples = genSizes{1};
         nrAtoms = genSizes{1};
     end
+    
+    if isempty(lambda)
+       lambda = 0.01;
+    end
+    
     [genY, genD] = genData(features, samples, nrAtoms, 0, -1, -1);
     genCorrelation = -abs(genD' * genD);
     trCorr = trace(genCorrelation)
     %[genAssign, genCost] = munkres(genCorrelation);
     
-    disp('learning dictionary');
+    fprintf('Dimensions of Y: %i features x %i samples.\n',...
+        feautes, samples);
+    fprintf('Lambda = %f, extracting %i atoms.\n', lambda, nrAtoms);
+    disp('Learning the dictionary...');
     [learnD, learnW, learnW0] = ...
-        DictionaryLearning(genY, 0.1, nrAtoms, 200, [], true, false, genD);
+        DictionaryLearning(genY, lambda, nrAtoms, 200, [], true, false, genD);
     
     learnCorrelation = -abs(genD' * learnD);
     [learnAssign, learnCost] = munkres(learnCorrelation);
