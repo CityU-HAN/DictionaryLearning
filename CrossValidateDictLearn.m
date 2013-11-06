@@ -1,47 +1,63 @@
-function [error]=CrossValidateDictLearn()
-    features = 100;
-    %Split half-half into two data sets
-    samples = 160;
-    nrAtoms = 50;
-    %generates y R^features*samples
-    [Y, D] = genData(features, samples, nrAtoms);
-    yHalf = size(Y, 2)/2;
-    
-    yTrain = Y(:, 1:yHalf);
-    yTest = Y(:, yHalf + 1:end);
-    [assignment, cost] = munkres(yTrain);
-    disp('Running Dictionary Learning Algorithm...');
-    tic
-    [fitD, fitW, fitW0] = DictionaryLearning(yTrain, 0.1, nrAtoms, 500, [], false, false);
-    time = toc
-    minutes = time/60
-    predictedY = predictY(fitD, fitW, fitW0);
-    disp('Mean, min, max of yTrain and predictedY:');
-    disp([mean2(yTrain) mean2(predictedY)]);
-    disp([min2(yTrain) min2(predictedY)]);
-    disp([max2(yTrain) max2(predictedY)]);
-    
-    disp('Absolute and squared difference:');
-    disp(sum(sum(abs(yTrain - predictedY))));
-    disp(sum(sum((yTrain - predictedY).^2)));
-    
-    [assignmentNew, costNew] = munkres(predictedY);
-    indicesEqual = assignment == assignmentNew
-    
-    assignment
-    assignmentNew
-    sum(1 - indicesEqual)
-    cost
-    costNew
-    disp(abs(cost - costNew))
-    return
-    
-    error = zeros(yHalf, 1);
-    for i=1:yHalf
-        wValidate = yTest(:, i) \ fitD;
-        error(i) = sum((yTest(:, 1) - fitD * wValidate') .^ 2);
+function [meanError]=CrossValidateDictLearn(k, Y, lambda, genSizes)
+    if isempty(Y)
+        if isempty(genSizes)
+            features = 50;
+            samples = 100;
+            nrAtoms = 50;
+        else
+            features = genSizes{1};
+            samples = genSizes{2};
+            nrAtoms = genSizes{3};
+        end
+        rng(1);
+        %generates y R^features*samples
+        [Y, ~, ~, ~] = genData(features, samples, nrAtoms, 0, 0.5, {});
+    else
+       features = size(Y, 1);
+       samples = size(Y, 2);
+       nrAtoms = features;
     end
-    meanError = mean(error);
-    format long;
-    disp(meanError);
+    
+    if isempty(lambda)
+        lambda = 0.1;
+    end
+
+    indices = crossvalind('Kfold', samples, k);
+    fprintf('\nRunning Dictionary Learning Cross Validation.\n');
+    fprintf('Chosen Lambda = %f, number of Dict atoms: %i\n\n', lambda, nrAtoms);
+    
+    errors = zeros(k, 1);
+    parallelCVStart = tic();
+    parfor i=1:k
+        YTrain = Y(:, indices ~= i);
+        YTest = Y(:, indices == i);
+        
+        testSamples = size(YTest, 2);
+        
+        fprintf('Size training-set: %i features x %i samples. Test-set: %i features x %i samples.\n',...
+            size(YTrain, 1), size(YTrain, 2), size(YTest, 1), testSamples);
+        
+        fprintf('Training on set %i out of %i...\n', i, k);
+        %tic;
+        [learnD, ~, ~] = DictionaryLearning(YTrain, lambda, nrAtoms, 500, [], false, false, {});
+        %time = toc;
+        %minutes = time/60;
+        %fprintf('Running time %.10f minutes\n', minutes);
+        
+        %Adding a column of 1s to the learned Dictionary
+        learnD = [ones(size(learnD, 1), 1) learnD];
+        
+        %error = zeros(testSamples, k);
+        fprintf('Testing on set %i out of %i...\n', i, k);
+        for j=1:testSamples
+            wTest = YTest(:, j) \ learnD;
+            errors(i) = errors(i) + sum((YTest(:, j) - learnD * wTest') .^ 2);
+        end
+    end
+    parallelStop = toc(parallelCVStart);
+    fprintf('Time: %f\', parallelStop);
+    
+    meanError = sum(errors) / size(Y, 2);
+    %format long;
+    %disp(meanError);
 end

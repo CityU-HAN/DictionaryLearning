@@ -8,9 +8,7 @@ function D = updateDict(Y, D, W, w0)
             B = W(a, :) * W(a, :)';
             %update predictedY first
             predictedY(f, :) = predictedY(f, :) - D(f, a) * W(a, :);
-            if (B == 0)
-                A
-                B
+            if (B <= 0 || A < 0)
                 D(f, a) = 0;
             else
                 D(f, a) = A / B;

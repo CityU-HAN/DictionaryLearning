@@ -46,13 +46,21 @@ while ll - prevll > TOL && iter < MAXIT
     w0 = 1/n*sum(y - X*w);
     for j=1:k
         w(j) = 0;
-        w(j) = 1/(sum(X(:,j).^2) + lambda*(alpha)) * shrinkThreshold((y - w0 - X*w)'*X(:,j),(1-alpha)*lambda);
+        B = sum(X(:,j).^2);
+        if B == 0
+            w(j) = 0;
+        else
+            w(j) = 1/(B + lambda*(alpha)) * shrinkThreshold((y - w0 - X*w)'*X(:,j),(1-alpha)*lambda);
+        end
     end
     
     % likelihood for new state
     ll = loglik(y,X,lambda,alpha,w0,w);
     
-    assert(ll-prevll>=0)
+    
+    if ll-prevll >= TOL
+        assert(ll-prevll>=0)
+    end
     
     lls(iter) = ll;
     

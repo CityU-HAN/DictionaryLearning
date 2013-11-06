@@ -1,4 +1,4 @@
-function [Dict, W, w0] = DictionaryLearning(Y, lambda, nrAtoms, nrIterations, crossValidation, verbose, display)
+function [Dict, W, w0] = DictionaryLearning(Y, lambda, nrAtoms, nrIterations, crossValidation, verbose, display, DInit)
 
 if nargin < 1
   error('Y is a required input')
@@ -13,7 +13,7 @@ assert(features > 1 && samples >= 1)
 if isempty(lambda)
     lambda = 0.1;
 end
-assert(lambda >= 0 && lambda <= 1)
+%assert(lambda >= 0 && lambda <= 1)
 
 if isempty(nrAtoms)
     nrAtoms = features;
@@ -37,6 +37,7 @@ if isempty(display)
 end
 %Initaliaze dictionary and weights
 Dict = abs(randn(features, nrAtoms));
+%Dict = DInit;
 %W = zeros(nrAtoms, samples);
 W = abs(randn(nrAtoms, samples));
 w0 = zeros(1, samples);
@@ -74,11 +75,11 @@ while (abs(curError - prevError) > TOL) && (iter <= MAXIT)
     format long
     prevError = curError;
     curError = calculateError(Y, Dict, W, w0, lambda);
-    errorDif = curError - prevError; 
+    errorDif = abs(curError - prevError); 
     
     if(verbose)
         fprintf('After lasso, curCost - prevCost = %.10f - %.10f = %.10f\n', curError, prevError, errorDif);
-        fprintf('Updating Dictionary...');
+        fprintf('Updating Dictionary...\n');
     end
     
     if( abs(errorDif) > TOL )
@@ -91,10 +92,10 @@ while (abs(curError - prevError) > TOL) && (iter <= MAXIT)
     %% Calculate and print imrpovements (error-difference)
     prevError = curError;
     curError = calculateError(Y, Dict, W, w0, lambda);
-    errorDif = curError - prevError;
+    errorDif = abs(curError - prevError);
     
     if(verbose)
-        fprintf('Dictionary updated: curCost - prevCost = %.10f - %.10f = %.10f\n', curError, prevError, errorDif);
+        fprintf('Dictionary updated, curCost - prevCost = %.10f - %.10f = %.10f\n', curError, prevError, errorDif);
     end
     
     %% Plot calculated errors for each iteration
