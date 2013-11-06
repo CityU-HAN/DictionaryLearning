@@ -1,7 +1,13 @@
-function testDictHungarian = testDictHungarian()
-    features = 8;
-    samples = 20;
-    nrAtoms = 8;
+function [genCost, learnCost] = testDictHungarian(genSizes)
+    if isempty(genSizes)
+        features = 8;
+        samples = 20;
+        nrAtoms = 8;
+    else
+        features = genSizes{1};
+        samples = genSizes{1};
+        nrAtoms = genSizes{1};
+    end
     [genY, genD] = genData(features, samples, nrAtoms, 0, -1, -1);
     genD
     genCorrelation = -abs(genD' * genD);
@@ -14,10 +20,10 @@ function testDictHungarian = testDictHungarian()
     
     learnCorrelation = -abs(genD' * learnD);
     [learnAssign, learnCost] = munkres(learnCorrelation);
-    abs(genCost)
-    abs(learnCost)
+    expectedCost = abs(genCost)
+    learnedCost = abs(learnCost)
+    difference - abs(genCost - learnCost)
     
     %genD
     %learnD
-    
-    
+end
