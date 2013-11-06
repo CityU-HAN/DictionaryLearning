@@ -14,10 +14,10 @@ function testDictHungarian = testDictHungarian()
     
     learnCorrelation = -abs(genD' * learnD);
     [learnAssign, learnCost] = munkres(learnCorrelation);
-    genCost
-    learnCost
+    abs(genCost)
+    abs(learnCost)
     
-    genD
-    learnD
+    %genD
+    %learnD
     
     
