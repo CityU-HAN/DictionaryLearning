@@ -8,13 +8,15 @@ function D = updateDict(Y, D, W, w0)
             B = W(a, :) * W(a, :)';
             %update predictedY first
             predictedY(f, :) = predictedY(f, :) - D(f, a) * W(a, :);
-            if (B <= 0 || A < 0)
-                D(f, a) = 0;
-            else
+            %if (B <= 0 || A < 0)
+            if (B == 0)
+                B = 1e-8;
+            end
+            %else
                 D(f, a) = A / B;
                 %update predictedY for the new Dictionary Element
                 predictedY(f, :) = predictedY(f, :) + D(f, a) * W(a, :);
-            end
+            %end
         end
     end
 end

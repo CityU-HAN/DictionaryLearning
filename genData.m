@@ -40,35 +40,39 @@ end
 %% Generate W
 genW = randn(atoms, samples);
 %in each column, sets a random number of columns 0
-for i=1:size(genW, 2)
-    %Decides how many rows will be set to 0
-    if wSparsityLevel < 0
-        r = randi(size(genW, 1) - 1);
-    else
-        r = round(size(genW, 1) * wSparsityLevel);
+if wSparsityLevel ~= 0
+    for i=1:size(genW, 2)
+        %Decides how many rows will be set to 0
+        if wSparsityLevel < 0
+            r = randi(size(genW, 1) - 1);
+        else
+            r = round(size(genW, 1) * wSparsityLevel);
+        end
+        %sets the first r rows to 0
+        genW(1:r, i) = 0;
+        %shuffles the whole row
+        genW(:, i) = genW(randperm(length(genW(:, i))), i);
+        %genW = genW .* (genW > 0);
     end
-    %sets the first r rows to 0
-    genW(1:r, i) = 0;
-    %shuffles the whole row
-    genW(:, i) = genW(randperm(length(genW(:, i))), i);
-    %genW = genW .* (genW > 0);
 end
 genW0 = zeros(1, samples);
 
 %% Generate Dictonary (random normal dist. generation)
 genD = abs(randn(features, atoms));
-%in each column, sets a random number of rows to 0 (between 0 and "all-1") 
-for i=1:size(genD, 2)
-    %Decides how many rows will be set to 0
-    if wSparsityLevel < 0
-        r = randi([0, size(genD, 1) - 1]);
-    else
-        r = round(size(genD, 1) * dictSparsityLevel);
+%in each column, sets a random number of rows to 0 (between 0 and "all-1")
+if dictSparsityLevel ~= 0
+    for i=1:size(genD, 2)
+        %Decides how many rows will be set to 0
+        if dictSparsityLevel < 0
+            r = randi([0, size(genD, 1) - 1]);
+        else
+            r = round(size(genD, 1) * dictSparsityLevel);
+        end
+        %sets the first r rows to 0
+        genD(1:r, i) = 0;
+        %shuffles the whole column
+        genD(:, i) = genD(randperm(length(genD(:, i))), i);
     end
-    %sets the first r rows to 0
-    genD(1:r, i) = 0;
-    %shuffles the whole column
-    genD(:, i) = genD(randperm(length(genD(:, i))), i);
 end
 
 %% Generate Y   

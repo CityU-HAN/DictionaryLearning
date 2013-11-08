@@ -19,7 +19,7 @@ function [genCost, learnCost] = testDictHungarian(genSizes, lambda)
     %[genAssign, genCost] = munkres(genCorrelation);
     
     fprintf('Dimensions of Y: %i features x %i samples.\n',...
-        feautes, samples);
+        features, samples);
     fprintf('Lambda = %f, extracting %i atoms.\n', lambda, nrAtoms);
     disp('Learning the dictionary...');
     [learnD, learnW, learnW0] = ...
