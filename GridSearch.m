@@ -86,7 +86,7 @@ function [bestLambda]=GridSearch(k, init, lambdaMax, genSizes, randomSeed, hunga
         %drawnow ('x11', '/dev/null', false, 'gnuplotstream.gp') 
         save('dbg')
     else
-        disp('----------------\nGround Truth: %f\n');
+        disp('----------------\nGround Truth:\n');
         expectedCost = abs(trace(-abs(genD' * genD)));
         fprintf('Expected Cost: %f\n', expectedCost)
         fprintf('Sparsity of W: %f\n', sum(sum(W==0)) / numel(W))

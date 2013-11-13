@@ -74,7 +74,7 @@ function [meanError, meanCost, meanSparsity] =...
         end
     end
     parallelStop = toc(parallelCVStart);
-    fprintf('%d - Fold test Finished. Time: %f\n', k ,parallelStop);
+    fprintf('%d - Fold test with Lambda %f finished. Time: %f\n', k, lambda, parallelStop);
     
     meanError = sum(errors) / size(Y, 2);
     meanCost = sum(costs) / size(Y, 2);

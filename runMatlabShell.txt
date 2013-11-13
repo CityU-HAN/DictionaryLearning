@@ -1,1 +1,1 @@
-matlab -nodisplay -nosplash -nodesktop -r "GridSearch(5, {}, {}, {50, 100, 50}, 2, true, false); exit();"
+(nohup matlab -nodisplay -nosplash -nodesktop -r "GridSearch(5, {}, {}, {50, 100, 50}, 2, true, false); exit();" > matlabGridSearch-00h00mm_13-11-2013.txt) >& errorLogMatlab.txt &
