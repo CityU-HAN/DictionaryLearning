@@ -65,7 +65,7 @@ function [bestLambda]=GridSearch(k, init, lambdaMax, genSizes, randomSeed, hunga
         fprintf('\nIteration %i out of %i, testing Lambda=%f\n', i, (k*2), lambdas(i));
         
         [meanErrors(i), meanCosts(i), meanSparsities(i)] = ...
-            CrossValidateDictLearn(k, {Y}, lambdas(i), {}, randomSeed, hungarianTest);
+            CrossValidateDictLearn(k, {Y, D}, lambdas(i), {}, randomSeed, hungarianTest);
         
         fprintf('MeanError: %i\n', meanErrors(i));
     end

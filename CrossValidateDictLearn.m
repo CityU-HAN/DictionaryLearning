@@ -20,8 +20,8 @@ function [meanError, meanCost, meanSparsity] =...
        samples = size(Y, 2);
        nrAtoms = features;
        if hungarianTest
-            %assert(length(init) == 3, 'You must provide a Dictionary and weights.')
-            %D = init{2};
+            assert(length(init) == 2, 'You must provide a Dictionary.')
+            D = init{2};
             %W = init{3};
             costs = zeros(k, 1);
             wSparsities = zeros(k, 1);
@@ -66,7 +66,7 @@ function [meanError, meanCost, meanSparsity] =...
             wTest = YTest(:, j) \ learnD;
             errors(i) = errors(i) + sum((YTest(:, j) - learnD * wTest') .^ 2);
             if hungarianTest
-                learnedCorrelation = -abs(genD' * learnD);
+                learnedCorrelation = -abs(D' * learnD);
                 [~, learnCost] = munkres(learnedCorrelation);
                 costs(i) = costs(i) + abs(learnCost);
                 wSparsities(i) = wSparsities(i) + sum(sum(wTest(:, 2:end)==0)) / numel(wTest(:, 2:end))
