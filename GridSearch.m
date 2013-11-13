@@ -1,4 +1,4 @@
-    function [bestLambda]=GridSearch(k, Y, lambdaMax, genSizes, display)
+function [bestLambda]=GridSearch(k, init, lambdaMax, genSizes, randomSeed, hungarianTest, display)
     GridSearchStart = tic();
     if isempty(k)
         k = 5;
@@ -17,17 +17,35 @@
         nrAtoms = genSizes{3};
     end
     
-    if isempty(Y)
+    if isempty(init)
         rng(1);
         %generates y R^features*samples
-        [Y, D, ~, ~] = genData(features, samples, nrAtoms, {}, {}, {});
+        [Y, D, W, ~] = genData({features, samples, nrAtoms}, 0, {60, 0}, {});
+    else
+        Y = init{1};
+        D = init{2};
+        if length(init) > 2
+            W = init{3};
+        end
+        if length(init) > 3
+            W0 = init{4};
+        end
+        
+        features = size(Y, 1);
+        samples = size(Y, 2);
+        nrAtoms = size(D, 2);
     end
     
     if isempty(lambdaMax)
         if isempty(D)
             lambdaMax = 2;
         else
-            lambdaMax = max(max(Y,[],2) * max(max(D)));
+            lambdaMax = 0;
+            for j=1:samples
+                localMax = max(abs(Y(:, j)' * D));
+                lambdaMax = max(localMax, lambdaMax);
+            end
+            %lambdaMax = max(max(Y,[],2) * max(max(D)));
         end
     end
     
@@ -36,21 +54,25 @@
     end
     
     meanErrors = zeros(k, 1);
+    meanCosts = zeros(k, 1);
+    meanSparsities = zeros(k, 1);
     lambdas = zeros(k, 1);
     
     fprintf('Starting Gridsearch for %i Lambdas, using %i-fold CrossValidation for each...\n', k*2, k);
     parfor i=1:k*2
-        lambdas(i) = lambdaMax * 0.5^(i-1)* 0.5^(i-1);
+        lambdas(i) = lambdaMax * 0.1^(i-1);
         
         fprintf('\nIteration %i out of %i, testing Lambda=%f\n', i, (k*2), lambdas(i));
         
-        meanErrors(i) = CrossValidateDictLearn(k, Y, lambdas(i), {});
+        [meanErrors(i), meanCosts(i), meanSparsities(i)] = ...
+            CrossValidateDictLearn(k, {Y}, lambdas(i), {}, randomSeed, hungarianTest);
         
         fprintf('MeanError: %i\n', meanErrors(i));
     end
     
     %get the index of the lambda with the minimum mean Error.
-    bestLambda = lambdas(find(meanErrors == min(meanErrors)));
+    bestLambda = lambdas(find(meanErrors == min(meanErrors))); 
+    
     
     if(display)
         lambdas
@@ -64,8 +86,15 @@
         %drawnow ('x11', '/dev/null', false, 'gnuplotstream.gp') 
         save('dbg')
     else
+        disp('----------------\nGround Truth: %f\n');
+        expectedCost = abs(trace(-abs(genD' * genD)));
+        fprintf('Expected Cost: %f\n', expectedCost)
+        fprintf('Sparsity of W: %f\n', sum(sum(W==0)) / numel(W))
         for i=1:k*2
-            fprintf('Mean-error: %f for Lambda %f\n', meanErrors(i), lambdas(i));
+            fprintf('Lambda: %f\n', lambdas(i));
+            fprintf('Mean-error: %f\n', meanErrors(i));
+            fprintf('Mean-Cost (Hungarian): %f, Difference: %f\n', meanCosts(i), abs(expectedCost - meanCosts(i)));
+            fprintf('Mean Sparsity of W: %f\n\n', meanSparsities(i));
         end
          fprintf('Best Lambda %f\n', bestLambda);
     end

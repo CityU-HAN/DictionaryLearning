@@ -1,7 +1,7 @@
 function [w0, w] = coordAscentENet(y, X, lambda, alpha, init, nrIterations)
 % check input sizes
-assert(size(y, 1)==size(X, 1) && size(y, 1) > 1);
 n = size(y, 1);
+assert(n == size(X, 1) && size(y, 1) > 1, 'Rows of y and x: %d, %d', n, size(X, 1));
 k = size(X, 2);
 
 % initialize parameters

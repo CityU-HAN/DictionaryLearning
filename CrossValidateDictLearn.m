@@ -1,5 +1,7 @@
-function [meanError]=CrossValidateDictLearn(k, Y, lambda, genSizes)
-    if isempty(Y)
+function [meanError, meanCost, meanSparsity] =... 
+            CrossValidateDictLearn(k, init, lambda, genSizes,...
+                                    randomSeed, hungarianTest)
+    if isempty(init)
         if isempty(genSizes)
             features = 50;
             samples = 100;
@@ -11,17 +13,27 @@ function [meanError]=CrossValidateDictLearn(k, Y, lambda, genSizes)
         end
         rng(1);
         %generates y R^features*samples
-        [Y, ~, ~, ~] = genData(features, samples, nrAtoms, 0, 0.5, {});
+        [Y, ~, ~, ~] = genData({features, samples, nrAtoms}, 0, {60, 0}, {});
     else
+       Y = init{1};
        features = size(Y, 1);
        samples = size(Y, 2);
        nrAtoms = features;
+       if hungarianTest
+            %assert(length(init) == 3, 'You must provide a Dictionary and weights.')
+            %D = init{2};
+            %W = init{3};
+            costs = zeros(k, 1);
+            wSparsities = zeros(k, 1);
+       end
     end
     
     if isempty(lambda)
         lambda = 0.1;
     end
-
+    if ~isempty(randomSeed)
+       rng(randomSeed)
+    end
     indices = crossvalind('Kfold', samples, k);
     fprintf('\nRunning Dictionary Learning Cross Validation.\n');
     fprintf('Chosen Lambda = %f, number of Dict atoms: %i\n\n', lambda, nrAtoms);
@@ -39,7 +51,8 @@ function [meanError]=CrossValidateDictLearn(k, Y, lambda, genSizes)
         
         fprintf('Training on set %i out of %i...\n', i, k);
         %tic;
-        [learnD, ~, ~] = DictionaryLearning(YTrain, lambda, nrAtoms, 500, [], false, false, {});
+        [learnD, ~, ~] = DictionaryLearning(YTrain, lambda, nrAtoms, 500, false, false, {}, {});
+        
         %time = toc;
         %minutes = time/60;
         %fprintf('Running time %.10f minutes\n', minutes);
@@ -52,12 +65,20 @@ function [meanError]=CrossValidateDictLearn(k, Y, lambda, genSizes)
         for j=1:testSamples
             wTest = YTest(:, j) \ learnD;
             errors(i) = errors(i) + sum((YTest(:, j) - learnD * wTest') .^ 2);
+            if hungarianTest
+                learnedCorrelation = -abs(genD' * learnD);
+                [~, learnCost] = munkres(learnedCorrelation);
+                costs(i) = costs(i) + abs(learnCost);
+                wSparsities(i) = wSparsities(i) + sum(sum(wTest(:, 2:end)==0)) / numel(wTest(:, 2:end))
+            end
         end
     end
     parallelStop = toc(parallelCVStart);
-    fprintf('Time: %f\', parallelStop);
+    fprintf('%d - Fold test Finished. Time: %f\n', k ,parallelStop);
     
     meanError = sum(errors) / size(Y, 2);
+    meanCost = sum(costs) / size(Y, 2);
+    meanSparsity = sum(wSparsities) / size(Y, 2);
     %format long;
     %disp(meanError);
 end

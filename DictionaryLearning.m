@@ -1,4 +1,5 @@
-function [Dict, W, w0] = DictionaryLearning(Y, lambda, nrAtoms, nrIterations, crossValidation, verbose, display, DInit)
+function [Dict, W, w0] = DictionaryLearning(Y, lambda, nrAtoms,...
+                            nrIterations, verbose, display, DInit, WInit)
 
 if nargin < 1
   error('Y is a required input')
@@ -23,11 +24,6 @@ if isempty(nrIterations)
     nrIterations = 1000;
 end
 
-%TODO: Implement corssValidation
-if isempty(crossValidation)
-    crossValidation = false;
-end
-
 if isempty(verbose)
     verbose = false;
 end
@@ -36,9 +32,12 @@ if isempty(display)
     display = false;
 end
 %Initaliaze dictionary and weights
-Dict = abs(randn(features, nrAtoms));
-%Dict = DInit;
-%W = zeros(nrAtoms, samples);
+if isempty(DInit)
+    Dict = abs(randn(features, nrAtoms));
+else
+    Dict = DInit;
+end
+
 W = abs(randn(nrAtoms, samples));
 w0 = zeros(1, samples);
 
@@ -66,7 +65,16 @@ while (abs(curError - prevError) > TOL) && (iter <= MAXIT)
     end
     %% Update each weight-vector
     for i = 1:samples
+        %[WTemp, Fitinfo] = lassoglm(Dict, Y(:, i), 'normal', 'Lambda', lambda,...
+        %    'RelTol', 1e-8, 'Weights', W(:, i));
+        %WTemp
+        %Fitinfo.Intercept
+        %W(:, i) = WTemp;
+        %w0(i) = Fitinfo.Intercept;
+        %return
         [w0Temp, WTemp] = coordAscentENet(Y(:,i), Dict, lambda, 0, {w0(i), W(:, i)}, 200);
+        %WTemp
+        %return
         W(:, i) = WTemp;
         w0(i) = w0Temp;
     end
