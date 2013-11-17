@@ -33,12 +33,25 @@ if isempty(display)
 end
 %Initaliaze dictionary and weights
 if isempty(DInit)
-    Dict = abs(randn(features, nrAtoms));
+    Dict = randn(features, nrAtoms);
+    W = randn(nrAtoms, samples);
+    %[W, S, Dict] = svd(Y', 'econ');
+    %Dict = bsxfun(@times, diag(S), Dict');
+    %Dict = Dict';
+    %W = W';
+    %W = [ones(1, size(W, 2)); W];
+    %W = randn(nrAtoms-1, samples);
+    %Dict = repmat( mean(Y) / (nrAtoms*features), features, nrAtoms );
+    %size(Dict)
 else
-    Dict = DInit;
+    %Dict = DInit;
+    %W = randn(nrAtoms, samples);
+    [W, S, Dict] = svd(Y', 'econ');
+    Dict = bsxfun(@times, diag(S), Dict');
+    Dict = Dict';
+    W = W';
 end
 
-W = abs(randn(nrAtoms, samples));
 w0 = zeros(1, samples);
 
 %Loop-control variables
@@ -66,41 +79,56 @@ while (abs(curError - prevError) > TOL) && (iter <= MAXIT)
     %% Update each weight-vector
     for i = 1:samples
         %[WTemp, Fitinfo] = lassoglm(Dict, Y(:, i), 'normal', 'Lambda', lambda,...
-        %    'RelTol', 1e-8, 'Weights', W(:, i));
+        %    'RelTol', 1e-8, 'Standardize', false);
         %WTemp
         %Fitinfo.Intercept
         %W(:, i) = WTemp;
         %w0(i) = Fitinfo.Intercept;
         %return
-        [w0Temp, WTemp] = coordAscentENet(Y(:,i), Dict, lambda, 0, {w0(i), W(:, i)}, 200);
+        %lambda
+        %WTemp = coordAscentENet(Y(:,i), [ones(features, 1) Dict], lambda, 0, {}, 200);
+        [w0Temp, WTemp] = coordAscentENetIntercept(Y(:,i), Dict, lambda, 0, {w0(i), W(:, i)}, 200);
+        %[WTest, ~] = larsen([ones(features, 1) Dict], Y(:,i), 0, lambda, [], false, false)
+        %size([ones(features, 1) Dict])
+        %size(Y(:, 1))
+        %[WTest, ~] = larsen([ones(features, 1) zscore(Dict)], center(Y(:,i)), 0, lambda, [], false, false)
+        %[WTest, ~] = larsen([ones(features, 1) Dict], Y(:,i), 0, lambda, [], false, false)
+        %[WTest, ~] = larsen(Dict, Y(:,i), 0, lambda, [], false, false)
+        %return
+        %return
+        %[wTest, ~] = larsen(Dict, Y(:,i), 0, lambda, [], false, false)
+        %[wTest2, ~] = elasticnet([ones(size(Dict, 1), 1) Dict], Y(:,i), 0, lambda, false, false)
+        %return
         %WTemp
         %return
         W(:, i) = WTemp;
         w0(i) = w0Temp;
+        %W(:, i) = WTemp(2:end);
+        %w0(i) = WTemp(1);
     end
     
     %% Calculate and print imrpovements (error-difference)
     format long
-    prevError = curError;
-    curError = calculateError(Y, Dict, W, w0, lambda);
-    errorDif = abs(curError - prevError); 
+    %prevError = curError;
+    %curError = calculateError(Y, Dict, W, w0, lambda);
+    %errorDif = curError - prevError; 
     
     if(verbose)
-        fprintf('After lasso, curCost - prevCost = %.10f - %.10f = %.10f\n', curError, prevError, errorDif);
+        %fprintf('After lasso, curCost - prevCost = %.10f - %.10f = %.10f\n', curError, prevError, errorDif);
         fprintf('Updating Dictionary...\n');
     end
     
-    if( abs(errorDif) > TOL )
-        assert(errorDif >= 0);
-    end
+    %if( abs(errorDif) > TOL )
+    %    assert(errorDif >= 0);
+    %end
     
     %% Update Dict
-    Dict = updateDict(Y, Dict, W, w0);
+    Dict = updateDict(Y, Dict, W, w0, lambda);
     
     %% Calculate and print imrpovements (error-difference)
     prevError = curError;
     curError = calculateError(Y, Dict, W, w0, lambda);
-    errorDif = abs(curError - prevError);
+    errorDif = curError - prevError;
     
     if(verbose)
         fprintf('Dictionary updated, curCost - prevCost = %.10f - %.10f = %.10f\n', curError, prevError, errorDif);
@@ -120,8 +148,9 @@ while (abs(curError - prevError) > TOL) && (iter <= MAXIT)
         end
     end
     
-    if(abs(errorDif) > TOL)
-        assert(errorDif >= 0);
+    if(abs(errorDif) > TOL && errorDif < 0)
+        %assert(errorDif >= 0);
+         fprintf('Whooop!, curCost - prevCost = %.10f - %.10f = %.10f\n', curError, prevError, errorDif);
     end
     iter = iter + 1;
 end

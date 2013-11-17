@@ -1,4 +1,4 @@
-function w = coordAscentENet(y, X, lambda, alpha, init, nrIterations)
+function [w0, w] = coordAscentENetIntercept(y, X, lambda, alpha, init, nrIterations)
 % check input sizes
 n = size(y, 1);
 assert(n == size(X, 1) && size(y, 1) > 1, 'Rows of y and x: %d, %d', n, size(X, 1));
@@ -7,11 +7,11 @@ k = size(X, 2);
 % initialize parameters
 if ~isempty(init)
     %support warm start
-    %w0 = init{1};
-    w = init{1};
+    w0 = init{1};
+    w = init{2};
 else
-    %w0 = mean(y);
-    w = [mean(y); 0.1*ones(k-1,1)];
+    w0 = mean(y);
+    w = 0.1*ones(k,1);
 end
 
 % assume default tolerance and number of iterations
@@ -27,7 +27,7 @@ lls = zeros(MAXIT,1);
 prevll = -realmax;
 
 
-ll = loglik(y, X, lambda, alpha, w);
+ll = loglik(y, X, lambda, alpha, w0, w);
 iter = 0;
 
 %close all;
@@ -43,19 +43,19 @@ while ll - prevll > TOL && iter < MAXIT
     prevll = ll;
     
     % updates
-    %w(1) = 1/n*sum(y - (X*w - w(1)));
+    w0 = 1/n*sum(y - X*w);
     for j=1:k
         w(j) = 0;
         B = sum(X(:,j).^2);
         if B == 0
             w(j) = 0;
         else
-            w(j) = 1/(B + lambda*(alpha)) * shrinkThreshold((y - X*w)'*X(:,j),(1-alpha)*lambda);
+            w(j) = 1/(B + lambda*(alpha)) * shrinkThreshold((y - w0 - X*w)'*X(:,j),(1-alpha)*lambda);
         end
     end
     
     % likelihood for new state
-    ll = loglik(y,X,lambda,alpha,w);
+    ll = loglik(y,X,lambda,alpha,w0,w);
     
     
     if ll-prevll >= TOL
@@ -93,10 +93,13 @@ while ll - prevll > TOL && iter < MAXIT
     %ylabel('penalized log-likelihood');
 end
 
-function ll = loglik(y, X, lambda, alpha, w)
-ll = -1/2*(y - X*w)'*(y - X*w)...
-    -alpha*lambda/2*sum(w.^2) - (1-alpha)*lambda*(sum(abs(w)) - w(1));
+function ll = loglik(y, x, lambda, alpha, w0, w)
+n = size(y,1);
+ll = -1/2*(y - w0 - x*w)'*(y - w0 - x*w)...
+    -alpha*lambda/2*sum(w.^2) - (1-alpha)*lambda*sum(abs(w));
 
 function x = shrinkThreshold(x, lambda)
+btemp = abs(x);
+maxval = max(abs(x) - lambda, 0);
 x = sign(x).*max(abs(x) - lambda, 0);
 

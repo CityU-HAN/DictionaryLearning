@@ -1,5 +1,5 @@
 function [genY, genD, genW, genW0] = genData(genSizes, noiseLevel,... 
-                                        sparsityCtrls, standardize)
+                                        sparsityCtrls, combineW0)
 % genData  generates synthetic data
 %   [Y, D] = ADDME(f, s, a) generates Y of size f*s, with no noise added 
 %   and D of size f*a
@@ -19,18 +19,24 @@ if nargin < 1
   error('Dimensions are required as input');
 end
 
-assert(length(genSizes) == 3, 'genSizes must consist of {features, samples, atoms}');
+assert(length(genSizes) == 3 || isempty(genSizes), 'genSizes must consist of {features, samples, atoms}');
 
-features = genSizes{1};
-samples = genSizes{2};
-atoms = genSizes{3};
+if isempty(genSizes)
+    features = 3;
+    samples = 4;
+    atoms = 2;
+else
+    features = genSizes{1};
+    samples = genSizes{2};
+    atoms = genSizes{3};
+end
 
 if isempty(noiseLevel)
     noiseLevel = 0;
 end
 
 if length(sparsityCtrls) < 1
-    wSparsityPerc = -1;
+    wSparsityPerc = 0.6;
 else
     wSparsityPerc = sparsityCtrls{1}/100;
     if wSparsityPerc > 100
@@ -39,12 +45,16 @@ else
 end
 
 if length(sparsityCtrls) < 2
-    dictSparsityPerc = -1;
+    dictSparsityPerc = 0;
 else
     dictSparsityPerc = sparsityCtrls{2}/100;
     if dictSparsityPerc > 100
         dictSparsityPerc = 1;
     end
+end
+
+if nargin < 4
+    combineW0 = false;
 end
 
 %sparsityjiggle: Adds a bit of randomness to the wSparsitiPerc
@@ -69,7 +79,7 @@ end
 %end
 
 %% Generate W
-genW = abs(randn(atoms, samples));
+genW = randn(atoms, samples);
 %in each column, sets a random number of columns 0
 if wSparsityPerc ~= 0
     for i=1:size(genW, 2)
@@ -87,10 +97,15 @@ if wSparsityPerc ~= 0
         %genW = genW .* (genW > 0);
     end
 end
-genW0 = zeros(1, samples);
+if combineW0
+    genW = [randn(1, samples); genW];
+    genW0 = [];
+else
+    genW0 = randn(1, samples);
+end
 
 %% Generate Dictonary (random normal dist. generation)
-genD = abs(randn(features, atoms));
+genD = randn(features, atoms);
 %in each column, sets a random number of rows to 0 (between 0 and "all-1")
 if dictSparsityPerc ~= 0
     for i=1:size(genD, 2)
@@ -107,6 +122,12 @@ if dictSparsityPerc ~= 0
     end
 end
 
-%% Generate Y   
-genY = predictY(genD, genW, genW0) + noiseLevel * abs(randn(features, samples));
+if combineW0
+    %% Generate Y with w0 included
+    genD = [ones(features, 1) genD];
+    genY = predictY(genD, genW) + noiseLevel * randn(features, samples);
+else
+   %% Generate Y with w0 separate
+   genY = predictY(genD, genW, genW0) + noiseLevel * randn(features, samples); 
+end
 end
