@@ -1,6 +1,6 @@
 function [meanError, meanCost, meanSparsity] =... 
             CrossValidateDictLearn(k, init, lambda, genSizes,...
-                                    randomSeed, hungarianTest)
+                                    randomSeed, hungarianTest, useSvd)
     if isempty(init)
         if isempty(genSizes)
             features = 50;
@@ -34,6 +34,7 @@ function [meanError, meanCost, meanSparsity] =...
     if ~isempty(randomSeed)
        rng(randomSeed)
     end
+    
     indices = crossvalind('Kfold', samples, k);
     fprintf('\nRunning Dictionary Learning Cross Validation.\n');
     fprintf('Chosen Lambda = %f, number of Dict atoms: %i\n\n', lambda, nrAtoms);
@@ -51,7 +52,7 @@ function [meanError, meanCost, meanSparsity] =...
         
         fprintf('Training on set %i out of %i...\n', i, k);
         %tic;
-        [learnD, ~, ~] = DictionaryLearning(YTrain, lambda, nrAtoms, 500, false, false, {}, {});
+        [learnD, ~, ~] = DictionaryLearning(YTrain, lambda, nrAtoms, 500, false, false, useSvd, {});
         
         %time = toc;
         %minutes = time/60;

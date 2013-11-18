@@ -1,4 +1,4 @@
-function [bestLambda]=GridSearch(k, init, lambdaMax, genSizes, randomSeed, hungarianTest, display)
+function [bestLambda]=GridSearch(k, init, lambdaMax, genSizes, randomSeed, hungarianTest, display, useSvd)
     GridSearchStart = tic();
     if isempty(k)
         k = 5;
@@ -20,7 +20,7 @@ function [bestLambda]=GridSearch(k, init, lambdaMax, genSizes, randomSeed, hunga
     if isempty(init)
         rng(1);
         %generates y R^features*samples
-        [Y, D, W, ~] = genData({features, samples, nrAtoms}, 0, {60, 0}, {});
+        [Y, D, W, ~] = genData({features, samples, nrAtoms}, 0, {60, 0}, {}, false);
     else
         Y = init{1};
         D = init{2};
@@ -65,7 +65,7 @@ function [bestLambda]=GridSearch(k, init, lambdaMax, genSizes, randomSeed, hunga
         fprintf('\nIteration %i out of %i, testing Lambda=%f\n', i, (k*2), lambdas(i));
         
         [meanErrors(i), meanCosts(i), meanSparsities(i)] = ...
-            CrossValidateDictLearn(k, {Y, D}, lambdas(i), {}, randomSeed, hungarianTest);
+            CrossValidateDictLearn(k, {Y, D}, lambdas(i), {}, randomSeed, hungarianTest, useSvd);
         
         fprintf('MeanError: %f for Lambda: %f\n', meanErrors(i), lambdas(i));
         fptintf('MeanCost: %f for Lambda %f\n', meanCosts(i), lambdas(i));
