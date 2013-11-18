@@ -33,7 +33,7 @@ if isempty(display)
 end
 %Initaliaze dictionary and weights
 if isempty(DInit)
-    Dict = randn(features, nrAtoms);
+    Dict = zscore(randn(features, nrAtoms));
     W = randn(nrAtoms, samples);
     %[W, S, Dict] = svd(Y', 'econ');
     %Dict = bsxfun(@times, diag(S), Dict');
@@ -87,8 +87,8 @@ while (abs(curError - prevError) > TOL) && (iter <= MAXIT)
         %return
         %lambda
         %WTemp = coordAscentENet(Y(:,i), [ones(features, 1) Dict], lambda, 0, {}, 200);
-        [w0Temp, WTemp] = coordAscentENetIntercept(Y(:,i), Dict, lambda, 0, {w0(i), W(:, i)}, 200);
-        %[WTest, ~] = larsen([ones(features, 1) Dict], Y(:,i), 0, lambda, [], false, false)
+        %[w0Temp, WTemp] = coordAscentENetIntercept(Y(:,i), Dict, lambda, 0, {w0(i), W(:, i)}, 200);
+        [WTemp, ~] = larsen([ones(features, 1) Dict], Y(:,i), 0, lambda, [], false, false);
         %size([ones(features, 1) Dict])
         %size(Y(:, 1))
         %[WTest, ~] = larsen([ones(features, 1) zscore(Dict)], center(Y(:,i)), 0, lambda, [], false, false)
@@ -101,10 +101,10 @@ while (abs(curError - prevError) > TOL) && (iter <= MAXIT)
         %return
         %WTemp
         %return
-        W(:, i) = WTemp;
-        w0(i) = w0Temp;
-        %W(:, i) = WTemp(2:end);
-        %w0(i) = WTemp(1);
+        %W(:, i) = WTemp;
+        %w0(i) = w0Temp;
+        W(:, i) = WTemp(2:end);
+        w0(i) = WTemp(1);
     end
     
     %% Calculate and print imrpovements (error-difference)

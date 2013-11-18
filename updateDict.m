@@ -33,7 +33,7 @@ function D = updateDict(Y, D, W, w0, lambda)
                 %    predictedY(f, :) = predictedY(f, :) + D(f, a) * W(a, :);
                 %end
             end
-            %D(:, f) = D(:, f) / max(norm(D(:, f), 2), 1);
+            D(:, f) = D(:, f) / max(norm(D(:, f)), 1);
         end
         prevError = curError;
         curError = calculateError(Y, D, W, w0, lambda);

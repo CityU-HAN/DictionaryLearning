@@ -2,7 +2,7 @@ function [expectedCost, learnedCost] = testDictHungarian(init, genSizes, lambda,
     if isempty(genSizes)
         features = 8;
         samples = 20;
-        nrAtoms = 9;
+        nrAtoms = 8;
     else
         features = genSizes{1};
         samples = genSizes{2};
