@@ -20,7 +20,7 @@ function [bestLambda]=GridSearch(k, init, lambdaMax, genSizes, randomSeed, hunga
     if isempty(init)
         rng(1);
         %generates y R^features*samples
-        [Y, D, W, ~] = genData({features, samples, nrAtoms}, 0, {60, 0}, {}, false);
+        [Y, D, W, ~] = genData({features, samples, nrAtoms}, 0, {60, 0}, {});
     else
         Y = init{1};
         D = init{2};
