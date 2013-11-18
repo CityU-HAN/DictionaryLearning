@@ -68,8 +68,8 @@ function [bestLambda]=GridSearch(k, init, lambdaMax, genSizes, randomSeed, hunga
             CrossValidateDictLearn(k, {Y, D}, lambdas(i), {}, randomSeed, hungarianTest, useSvd);
         
         fprintf('MeanError: %f for Lambda: %f\n', meanErrors(i), lambdas(i));
-        fptintf('MeanCost: %f for Lambda %f\n', meanCosts(i), lambdas(i));
-        fptintf('MeanSparsity of W: %f for Lambda %f\n', meanSparsities(i), lambdas(i));
+        fprintf('MeanCost: %f for Lambda %f\n', meanCosts(i), lambdas(i));
+        fprintf('MeanSparsity of W: %f for Lambda %f\n', meanSparsities(i), lambdas(i));
     end
     
     %get the index of the lambda with the minimum mean Error.
