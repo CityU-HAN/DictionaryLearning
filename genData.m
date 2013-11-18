@@ -53,7 +53,7 @@ else
     end
 end
 
-if nargin < 4
+if nargin < 4 || isempty(combineW0)
     combineW0 = false;
 end
 
