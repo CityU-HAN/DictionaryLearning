@@ -1,6 +1,10 @@
 (nohup matlab -nodisplay -nosplash -nodesktop -r "GridSearch(5, {}, {}, {50, 100, 50}, 2, true, false); exit();" > matlabGridSearch-00h00mm_13-11-2013.txt) >& errorLogMatlab.txt &
 
-(nohup matlab -nosplash -nodesktop –nojvm –noFigureWindows -nodisplay -r "GridSearch(5, {}, {}, {50, 100, 50}, 2, true, false ); exit();") >& errorLogMatlab-00h00m_13-11-2013.txt &
+(nohup matlab -nosplash -nodesktop -noFigureWindows -nodisplay -r "GridSearch(5, {}, {}, {50, 100, 50}, 2, true, false ); exit();") >& errorLogMatlab-00h00m_13-11-2013.txt &
 
-nohup matlab -nosplash -nodesktop –nojvm –noFigureWindows -nodisplay -r "GridSearch(5, {}, {}, {50, 100, 50}, 2, true, false  ); exit();" > matlabGridSearch-00h00mm_13-11-2013.txt
+nohup matlab -nosplash -nodesktop -noFigureWindows -nodisplay -r "GridSearch(5, {}, {}, {50, 100, 50}, 2, true, false  ); exit();" > matlabGridSearch-00h00mm_13-11-2013.txt
 then if error appears, just CTRL+Z to suspend and 'bg' to put it back into the background
+
+matlab -nosplash -nodesktop -noFigureWindows -nodisplay -r "testDictHungarianGrid(5, {}, {}, {10, 30, 10}, 3, true, false); exit();"
+
+atlab -nosplash -nodesktop -noFigureWindows -nodisplay -r "testDictHungarianGrid(5, {}, {}, {10, 30, 10}, 3, true, false); exit();"

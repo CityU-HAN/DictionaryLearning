@@ -89,7 +89,7 @@ function [bestLambda]=GridSearch(k, init, lambdaMax, genSizes, randomSeed, hunga
         save('dbg')
     else
         disp('----------------\nGround Truth:\n');
-        expectedCost = abs(trace(-abs(genD' * genD)));
+        expectedCost = abs(trace(-abs(D' * D)));
         fprintf('Expected Cost: %f\n', expectedCost)
         fprintf('Sparsity of W: %f\n', sum(sum(W==0)) / numel(W))
         for i=1:k*2
