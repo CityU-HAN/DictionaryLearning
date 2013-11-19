@@ -24,8 +24,8 @@ function [meanError, meanCost, meanSparsity] =...
             assert(length(init) == 2, 'You must provide a Dictionary.')
             D = init{2};
             %W = init{3};
-            wSparsities = zeros(k, 1);
        end
+       wSparsities = zeros(k, 1);
        costs = zeros(k, 1);
     end
     
