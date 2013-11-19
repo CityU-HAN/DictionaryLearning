@@ -1,7 +1,7 @@
 function [meanError, meanCost, meanSparsity] =... 
             CrossValidateDictLearn(k, init, lambda, genSizes,...
                                    randomSeed, hungarianTest, useSvd, standardize)
-    %D = [];
+    D = [];
     if isempty(init)
         if isempty(genSizes)
             features = 50;
@@ -24,9 +24,9 @@ function [meanError, meanCost, meanSparsity] =...
             assert(length(init) == 2, 'You must provide a Dictionary.')
             D = init{2};
             %W = init{3};
-            costs = zeros(k, 1);
             wSparsities = zeros(k, 1);
        end
+       costs = zeros(k, 1);
     end
     
     if isempty(lambda)

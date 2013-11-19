@@ -12,7 +12,7 @@ assert(features > 1 && samples >= 1)
 
 %check lambda
 if isempty(lambda)
-    lambda = 0.1;
+    lambda = 0.1;`d
 end
 %assert(lambda >= 0 && lambda <= 1)
 
