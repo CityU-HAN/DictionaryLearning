@@ -24,9 +24,13 @@ function [bestLambda]=GridSearch(k, init, lambdaMax, genSizes, randomSeed, hunga
         CVInit = {Y, D};
     else
         Y = init{1};
+        features = size(Y, 1);
+        samples = size(Y, 2);
+        nrAtoms = features;
         if length(init) > 1
             D = init{2};
             CVInit = {Y, D};
+             nrAtoms = size(D, 2);
         else
            CVInit = {Y}; 
         end
@@ -36,10 +40,6 @@ function [bestLambda]=GridSearch(k, init, lambdaMax, genSizes, randomSeed, hunga
         if length(init) > 3
             W0 = init{4};
         end
-        
-        features = size(Y, 1);
-        samples = size(Y, 2);
-        nrAtoms = size(D, 2);
     end
     
     if isempty(lambdaMax)
