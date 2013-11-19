@@ -1,5 +1,5 @@
 function [Dict, W, w0] = DictionaryLearning(Y, lambda, nrAtoms,...
-                            nrIterations, verbose, display, DInit, WInit)
+                            nrIterations, verbose, display, standardize, DInit, WInit)
 
 if nargin < 1
   error('Y is a required input')
@@ -31,9 +31,21 @@ end
 if isempty(display)
     display = false;
 end
+
+if isempty(standardize)
+    standardize = false;
+end
+
 %Initaliaze dictionary and weights
 if isempty(DInit)
-    Dict = zscore(randn(features, nrAtoms));
+    Dict = randn(features, nrAtoms);
+    if standardize
+        for a=1:nrAtoms
+          Dict(:, a) = Dict(:, a) / max(norm(Dict(:, a), 2), 1);
+        end
+    end
+    %Dict = normalize(Dict);
+    %Y = center(Y);
     W = randn(nrAtoms, samples);
     %[W, S, Dict] = svd(Y', 'econ');
     %Dict = bsxfun(@times, diag(S), Dict');
@@ -48,8 +60,9 @@ else
     %W = randn(nrAtoms, samples);
     [W, S, Dict] = svd(Y', 'econ');
     Dict = bsxfun(@times, diag(S), Dict');
-    Dict = Dict';
+    Dict = normalize(Dict');
     W = W';
+    Y = center(Y);
 end
 
 w0 = zeros(1, samples);
@@ -63,6 +76,8 @@ iter = 1;
 errors = zeros(MAXIT, 1);
 prevError = -inf;
 curError = calculateError(Y, Dict, W, w0, lambda);
+
+initPredY = {};
 
 format long
 %format short
@@ -87,8 +102,11 @@ while (abs(curError - prevError) > TOL) && (iter <= MAXIT)
         %return
         %lambda
         %WTemp = coordAscentENet(Y(:,i), [ones(features, 1) Dict], lambda, 0, {}, 200);
-        %[w0Temp, WTemp] = coordAscentENetIntercept(Y(:,i), Dict, lambda, 0, {w0(i), W(:, i)}, 200);
-        [WTemp, ~] = larsen([ones(features, 1) Dict], Y(:,i), 0, lambda, [], false, false);
+        [w0Temp, WTemp] = coordAscentENetIntercept(Y(:,i), Dict, lambda, 0, {w0(i), W(:, i)}, 200);
+        %[WTemp, ~] = larsen([ones(features, 1) Dict], Y(:,i), 0, lambda, [], false, false);
+        %Y = center(Y);
+        %Dict = normalize(Dict);
+        %[WTemp, ~] = larsen(Dict, Y(:,i), 0, size(Dict, 1) * lambda, [], false, false);
         %size([ones(features, 1) Dict])
         %size(Y(:, 1))
         %[WTest, ~] = larsen([ones(features, 1) zscore(Dict)], center(Y(:,i)), 0, lambda, [], false, false)
@@ -101,10 +119,11 @@ while (abs(curError - prevError) > TOL) && (iter <= MAXIT)
         %return
         %WTemp
         %return
-        %W(:, i) = WTemp;
-        %w0(i) = w0Temp;
-        W(:, i) = WTemp(2:end);
-        w0(i) = WTemp(1);
+        W(:, i) = WTemp;
+        %w0 = 0;
+        w0(i) = w0Temp;
+        %W(:, i) = WTemp(2:end);
+        %w0(i) = WTemp(1);
     end
     
     %% Calculate and print imrpovements (error-difference)
@@ -123,7 +142,7 @@ while (abs(curError - prevError) > TOL) && (iter <= MAXIT)
     %end
     
     %% Update Dict
-    Dict = updateDict(Y, Dict, W, w0, lambda);
+    [Dict, initPredY] = updateDict(Y, Dict, W, w0, lambda, {}, standardize);
     
     %% Calculate and print imrpovements (error-difference)
     prevError = curError;

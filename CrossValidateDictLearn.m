@@ -1,6 +1,7 @@
 function [meanError, meanCost, meanSparsity] =... 
             CrossValidateDictLearn(k, init, lambda, genSizes,...
-                                    randomSeed, hungarianTest, useSvd)
+                                   randomSeed, hungarianTest, useSvd, standardize)
+    %D = [];
     if isempty(init)
         if isempty(genSizes)
             features = 50;
@@ -13,7 +14,7 @@ function [meanError, meanCost, meanSparsity] =...
         end
         rng(1);
         %generates y R^features*samples
-        [Y, ~, ~, ~] = genData({features, samples, nrAtoms}, 0, {60, 0}, {});
+        [Y, D, ~, ~] = genData({features, samples, nrAtoms}, 0, {60, 0}, {});
     else
        Y = init{1};
        features = size(Y, 1);
@@ -52,7 +53,7 @@ function [meanError, meanCost, meanSparsity] =...
         
         fprintf('Training on set %i out of %i...\n', i, k);
         %tic;
-        [learnD, ~, ~] = DictionaryLearning(YTrain, lambda, nrAtoms, 500, false, false, useSvd, {});
+        [learnD, ~, ~] = DictionaryLearning(YTrain, lambda, nrAtoms, 500, false, false, standardize, useSvd, {});
         
         %time = toc;
         %minutes = time/60;

@@ -47,6 +47,8 @@ while ll - prevll > TOL && iter < MAXIT
     for j=1:k
         w(j) = 0;
         B = sum(X(:,j).^2);
+        %B = 1;
+        %B2 = norm(X(:, j), 2)
         if B == 0
             w(j) = 0;
         else

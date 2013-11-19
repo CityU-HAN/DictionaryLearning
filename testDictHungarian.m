@@ -46,7 +46,7 @@ function [expectedCost, learnedCost] = testDictHungarian(init, genSizes, lambda,
     fprintf('Lambda = %f, extracting %i atoms.\n', lambda, nrAtoms);
     disp('Learning the dictionary...');
     [learnD, learnW, learnW0] = ...
-        DictionaryLearning(genY, lambda, nrAtoms, 200, verbose, false, {}, {});
+        DictionaryLearning(genY, lambda, nrAtoms, 200, verbose, false, {1}, {});
     
     genWSparsityLevel = sum(sum(genW<0.01 & genW>-0.01)) / numel(genW)
     learnWSparsityLevel = sum(sum(learnW<0.01 & learnW>-0.01)) / numel(learnW)

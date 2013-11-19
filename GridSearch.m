@@ -1,4 +1,4 @@
-function [bestLambda]=GridSearch(k, init, lambdaMax, genSizes, randomSeed, hungarianTest, display, useSvd)
+function [bestLambda]=GridSearch(k, init, lambdaMax, genSizes, randomSeed, hungarianTest, display, useSvd, standardize)
     GridSearchStart = tic();
     if isempty(k)
         k = 5;
@@ -21,9 +21,15 @@ function [bestLambda]=GridSearch(k, init, lambdaMax, genSizes, randomSeed, hunga
         rng(1);
         %generates y R^features*samples
         [Y, D, W, ~] = genData({features, samples, nrAtoms}, 0, {60, 0}, {});
+        CVInit = {Y, D};
     else
         Y = init{1};
-        D = init{2};
+        if length(init) > 1
+            D = init{2};
+            CVInit = {Y, D};
+        else
+           CVInit = {Y}; 
+        end
         if length(init) > 2
             W = init{3};
         end
@@ -38,7 +44,7 @@ function [bestLambda]=GridSearch(k, init, lambdaMax, genSizes, randomSeed, hunga
     
     if isempty(lambdaMax)
         if isempty(D)
-            lambdaMax = 2;
+            lambdaMax = 10;
         else
             lambdaMax = 0;
             for j=1:samples
@@ -65,7 +71,7 @@ function [bestLambda]=GridSearch(k, init, lambdaMax, genSizes, randomSeed, hunga
         fprintf('\nIteration %i out of %i, testing Lambda=%f\n', i, (k*2), lambdas(i));
         
         [meanErrors(i), meanCosts(i), meanSparsities(i)] = ...
-            CrossValidateDictLearn(k, {Y, D}, lambdas(i), {}, randomSeed, hungarianTest, useSvd);
+            CrossValidateDictLearn(k, CVInit, lambdas(i), {}, randomSeed, hungarianTest, useSvd, standardize);
         
         fprintf('MeanError: %f for Lambda: %f\n', meanErrors(i), lambdas(i));
         fprintf('MeanCost: %f for Lambda %f\n', meanCosts(i), lambdas(i));
@@ -89,13 +95,17 @@ function [bestLambda]=GridSearch(k, init, lambdaMax, genSizes, randomSeed, hunga
         save('dbg')
     else
         disp('----------------\nGround Truth:\n');
-        expectedCost = abs(trace(-abs(D' * D)));
-        fprintf('Expected Cost: %f\n', expectedCost)
+        if hungarianTest
+            expectedCost = abs(trace(-abs(D' * D)));
+            fprintf('Expected Cost: %f\n', expectedCost);
+        end
         fprintf('Sparsity of W: %f\n', sum(sum(W==0)) / numel(W))
         for i=1:k*2
             fprintf('Lambda: %f\n', lambdas(i));
             fprintf('Mean-error: %f\n', meanErrors(i));
-            fprintf('Mean-Cost (Hungarian): %f, Difference: %f\n', meanCosts(i), abs(expectedCost - meanCosts(i)));
+            if hungarianTest
+                fprintf('Mean-Cost (Hungarian): %f, Difference: %f\n', meanCosts(i), abs(expectedCost - meanCosts(i)));
+            end
             fprintf('Mean Sparsity of W: %f\n\n', meanSparsities(i));
         end
          fprintf('Best Lambda %f\n', bestLambda);
