@@ -16,7 +16,7 @@ function [bestLambda]=GridSearch(k, init, lambdaMax, genSizes, randomSeed, hunga
         samples = genSizes{2};
         nrAtoms = genSizes{3};
     end
-    
+    D = [];
     if isempty(init)
         rng(1);
         %generates y R^features*samples
